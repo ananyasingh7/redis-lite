@@ -1,4 +1,4 @@
-public interface Serializer {
-    String serialize(String message);
-    String deserialize(String serializedMessage);
+public interface Serializer<T> {
+    String serialize(T message);
+    T deserialize(String serializedMessage);
 }
