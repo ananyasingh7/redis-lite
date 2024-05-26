@@ -2,25 +2,20 @@ public class RESPSerializer<T> implements Serializer<T> {
     @Override
     public String serialize(T message) {
         if (message == null) {
-            return "$-1\r\n";
+            return "$-1\\r\\n";
         }
 
         DataType dataType = getDataType(message);
         switch (dataType) {
             case SIMPLE_STRING:
-                // Implement serialization for SIMPLE_STRING
-                break;
+                return "+" + message + "\\r\\n";
             case ERROR:
-                // Implement serialization for ERROR
                 break;
             case INTEGER:
-                // Implement serialization for INTEGER
                 break;
             case BULK_STRING:
-                // Implement serialization for BULK_STRING
                 break;
             case ARRAY:
-                // Implement serialization for ARRAY
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported data type: " + dataType);
@@ -41,16 +36,12 @@ public class RESPSerializer<T> implements Serializer<T> {
 
         switch (dataType) {
             case SIMPLE_STRING:
-                // Implement deserialization for SIMPLE_STRING
-                break;
+                return (T) serializedMessage.substring(1, serializedMessage.length() - 4);
             case ERROR:
-                // Implement deserialization for ERROR
                 break;
             case INTEGER:
-                // Implement deserialization for INTEGER
                 break;
             case BULK_STRING:
-                // Implement deserialization for BULK_STRING
                 break;
             case ARRAY:
                 // Implement deserialization for ARRAY
@@ -64,7 +55,8 @@ public class RESPSerializer<T> implements Serializer<T> {
     }
 
     private DataType getDataType(T message) {
-        if (message instanceof String str) {
+        if (message instanceof String) {
+            String str = (String) message;
             if (str.startsWith("+")) {
                 return DataType.SIMPLE_STRING;
             } else if (str.startsWith("-")) {
