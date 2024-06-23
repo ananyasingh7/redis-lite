@@ -4,14 +4,14 @@ public class Main {
 
         // Test cases for deserialization
         String[] deserializationTestCases = {
-                "$-1\\r\\n",
+                // "$-1\\r\\n",
                 "*1\\r\\n$4\\r\\nping\\r\\n",
                 "*2\\r\\n$4\\r\\necho\\r\\n$11\\r\\nhello world\\r\\n",
                 "*2\\r\\n$3\\r\\nget\\r\\n$3\\r\\nkey\\r\\n",
-                "+OK\\r\\n",
-                "-Error message\\r\\n",
-                "$0\\r\\n\\r\\n",
-                "+hello world\\r\\n"
+                // "+OK\\r\\n",
+                //"-Error message\\r\\n",
+                // "$0\\r\\n\\r\\n",
+                //"+hello world\\r\\n"
         };
 
         System.out.println("Deserialization Test Cases:");

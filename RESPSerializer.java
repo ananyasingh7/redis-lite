@@ -1,6 +1,9 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class RESPSerializer<T> implements Serializer<T> {
     @Override
-    public String serialize(T message) {
+    public String serialize(Object message) {
         if (message == null) {
             return "$-1\\r\\n";
         }
@@ -10,19 +13,25 @@ public class RESPSerializer<T> implements Serializer<T> {
             case SIMPLE_STRING:
                 return "+" + message + "\\r\\n";
             case ERROR:
-                break;
+                return "-" + message + "\\r\\n";
             case INTEGER:
-                break;
+                return ":" + message + "\\r\\n";
             case BULK_STRING:
-                break;
+                return "$" + ((String) message).length() + "\\r\\n" + message + "\\r\\n";
             case ARRAY:
-                break;
+                if (!(message instanceof List<?> list)) {
+                    throw new IllegalArgumentException("Must be a List");
+                }
+                StringBuilder builder = new StringBuilder();
+                builder.append("*").append(list.size()).append("\\r\\n");
+                for(Object item: list) {
+                    String serializedItem = serialize(item);
+                    builder.append(serializedItem);
+                }
+                return builder.toString();
             default:
                 throw new IllegalArgumentException("Unsupported data type: " + dataType);
         }
-
-        // Return the serialized message
-        return null;
     }
 
     @Override
@@ -31,30 +40,48 @@ public class RESPSerializer<T> implements Serializer<T> {
             throw new IllegalArgumentException("Invalid serialized message");
         }
 
-        char prefix = serializedMessage.charAt(0);
-        DataType dataType = DataType.getDataType(prefix);
+        String unescapedMessage = serializedMessage.replace("\\r\\n", "\r\n");
+
+        DataType dataType = DataType.getDataType(unescapedMessage);
 
         switch (dataType) {
             case SIMPLE_STRING:
-                return (T) serializedMessage.substring(1, serializedMessage.length() - 4);
+                return (T) unescapedMessage.substring(1, unescapedMessage.length() - 2);
             case ERROR:
-                break;
+                return (T) unescapedMessage.substring(1, unescapedMessage.length() - 2);
             case INTEGER:
-                break;
+                return (T) Integer.valueOf(unescapedMessage.substring(1, unescapedMessage.length() - 2));
             case BULK_STRING:
-                break;
+                int lengthEnd = unescapedMessage.indexOf("\r\n");
+                if (lengthEnd == -1) {
+                    throw new IllegalArgumentException("Invalid bulk string format: missing \\r\\n after length");
+                }
+                int length = Integer.parseInt(unescapedMessage.substring(1, lengthEnd));
+                if (length == -1) {
+                    return null; // Null bulk string
+                }
+                return (T) unescapedMessage.substring(lengthEnd + 2, unescapedMessage.length() - 2);
             case ARRAY:
-                // Implement deserialization for ARRAY
-                break;
+                List<Object> result = new ArrayList<>();
+                String remaining = unescapedMessage.substring(1);
+                int count = Integer.parseInt(remaining.substring(0, remaining.indexOf("\r\n")));
+                remaining = remaining.substring(remaining.indexOf("\r\n") + 2);
+                for (int i = 0; i < count; i++) {
+                    int nextNewline = remaining.indexOf("\r\n");
+                    if (nextNewline == -1) {
+                        throw new IllegalArgumentException("Invalid array element: missing \\r\\n");
+                    }
+                    String element = remaining.substring(0, nextNewline + 2);
+                    result.add(deserialize(element));
+                    remaining = remaining.substring(nextNewline + 2);
+                }
+                return (T) result;
             default:
                 throw new IllegalArgumentException("Unsupported data type: " + dataType);
         }
-
-        // Return the deserialized object
-        return null;
     }
 
-    private DataType getDataType(T message) {
+    private DataType getDataType(Object message) {
         if (message instanceof String) {
             String str = (String) message;
             if (str.startsWith("+")) {

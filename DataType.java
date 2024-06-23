@@ -11,7 +11,11 @@ public enum DataType {
         this.prefix = prefix;
     }
 
-    public static DataType getDataType(char prefix) {
+    public static DataType getDataType(String message) {
+        if (message == null || message.isEmpty()) {
+            throw new IllegalArgumentException("Invalid message");
+        }
+        char prefix = message.charAt(0);
         for (DataType dataType : DataType.values()) {
             if (dataType.prefix == prefix) {
                 return dataType;
